@@ -1,16 +1,26 @@
 import * as cdk from 'aws-cdk-lib';
+import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb';
+import { Role } from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class StackTestStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: cdk.StackProps & { serviceName: string, role: Role }) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    const table = new Table(this, 'StackDynamoTable', {
+      tableName: `${props.serviceName}-table`,
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      partitionKey: {
+        name: 'id',
+        type: AttributeType.STRING
+      }
+    });
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'StackTestQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    table.grantReadWriteData(props.role);
+
+    new cdk.CfnOutput(this, `${props.serviceName}-TableName`, {
+      value: table.tableName
+    });
   }
 }
